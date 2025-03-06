@@ -1,22 +1,75 @@
-name: Practice GitHub Action  # Name of the workflow
+name: Practice GitHub Action
 
 on:
-  push:  
+  push:
     branches:
-      - main  # This workflow runs whenever code is pushed to the "main" branch
+      - main  # Runs when code is pushed to the main branch
+  pull_request:
+    branches:
+      - main  # Runs when a PR is raised to the main branch
 
 jobs:
-  build:  # Define a job named "build"
-    runs-on: ubuntu-latest  # Use the latest Ubuntu OS for execution
+  build:
+    runs-on: ubuntu-latest  # Uses the latest Ubuntu OS
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4  # Downloads your repository content to the runner machine
+        uses: actions/checkout@v4  # Fetches the repo content
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4  # Installs Node.js on the runner
+        uses: actions/setup-node@v4
         with:
           node-version: '18'  # Specifies Node.js version 18
 
       - name: Run a Script
-        run: echo "GitHub Actions Workflow is Running!"  # Prints a message in the workflow logs
+        run: echo "GitHub Actions Workflow is Running!"
+
+  auto-merge:
+    needs: build  # Automerge only if the build job is successful
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+
+    steps:
+      - name: Enable Auto-Merge
+        uses: pascalgn/automerge-action@v0.15.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: auto-merge
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Notify on Success
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "✅ PR has been successfully merged! 🎉"
+            });
+
+      - name: Notify on Merge Conflict
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.issues.createComment({
+              issue_number: ${{ github.event.pull_request.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "⚠️ Merge conflict detected! Please resolve conflicts and try again."
+            });
+
+
+
+
