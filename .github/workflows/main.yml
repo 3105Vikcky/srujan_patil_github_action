@@ -1,0 +1,22 @@
+name: Practice GitHub Action  # Name of the workflow
+
+on:
+  push:  
+    branches:
+      - main  # This workflow runs whenever code is pushed to the "main" branch
+
+jobs:
+  build:  # Define a job named "build"
+    runs-on: ubuntu-latest  # Use the latest Ubuntu OS for execution
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4  # Downloads your repository content to the runner machine
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4  # Installs Node.js on the runner
+        with:
+          node-version: '18'  # Specifies Node.js version 18
+
+      - name: Run a Script
+        run: echo "GitHub Actions Workflow is Running!"  # Prints a message in the workflow logs
